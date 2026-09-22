@@ -31,3 +31,11 @@ build/
 # Python packaging
 *.egg-info/
 dist/
+
+# Exclure les images brutes
+dataset/raw/
+
+# Exclure les fichiers systèmes et logs
+.DS_Store
+__MACOSX/
+*.log
