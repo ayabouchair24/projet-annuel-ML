@@ -14,10 +14,13 @@ if os.path.exists(clion_mingw) and hasattr(os, "add_dll_directory"):
 lib_name = "libmlp.dylib" if sys.platform == "darwin" else "libPA.dll"
 
 # Recherche dans le dossier build C++ ou localement via le lien symbolique
-if os.path.exists(os.path.join("..", "lib_cpp", "build", lib_name)):
-    lib_path = os.path.abspath(os.path.join("..", "lib_cpp", "build", lib_name))
+lib_path_candidate = os.path.join("lib_cpp", "build", lib_name)
+
+if os.path.exists(lib_path_candidate):
+    lib_path = os.path.abspath(lib_path_candidate)
 else:
     lib_path = os.path.abspath(lib_name)
+
 
 if hasattr(os, "add_dll_directory"):
     os.add_dll_directory(os.path.dirname(lib_path))

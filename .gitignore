@@ -39,3 +39,6 @@ dataset/raw/
 .DS_Store
 __MACOSX/
 *.log
+# Dataset utilise localement pour le rendu
+dataset/train/
+dataset/test/

@@ -1,86 +1,130 @@
-"""
-Bindings ctypes pour la classe MLP (lib_cpp) — perimetre Membre 2 uniquement.
-
-Expose : la structure dynamique du MLP, la propagation avant (forward) et
-les fonctions d'activation (Tanh / Sigmoide) implementees cote C++ dans
-mlp.hpp/mlp.cpp + mlp_capi.h/mlp_capi.cpp.
-
-Ce module ne contient volontairement PAS l'entrainement (fit/backward,
-partie de Membre 3) ni le Modele Lineaire (ml_capi.h, autre membre) : il
-correspond exactement a ce qui est necessaire pour le rendu 2, "ma partie
-a moi seulement".
-
-Usage :
-    from mlp_bindings import MLP
-    m = MLP([2, 4, 1], output_activation="tanh", hidden_activation="tanh")
-    print(m.layer_sizes)              # -> [2, 4, 1]
-    print(m.forward([0.5, -0.2]))      # -> [valeur dans ]-1, 1[ ]
-"""
-
 import ctypes
+import sys
 from pathlib import Path
 
-LIB_PATH = Path(__file__).resolve().parent.parent / "lib_cpp" / "build" / "libml_lib.dll"
 
-_ACTIVATION_CODES = {"tanh": 0, "sigmoid": 1, "linear": 2}
+# ============================================================
+# Chargement de la bibliothèque C++
+# ============================================================
 
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+LIB_PATH = PROJECT_ROOT / "lib_cpp" / "build" / "libmlp.dylib"
 
-def _load_library(path: Path = LIB_PATH) -> ctypes.CDLL:
-    lib = ctypes.CDLL(str(path))
+if not LIB_PATH.exists():
+    raise FileNotFoundError(
+        f"Bibliothèque MLP introuvable : {LIB_PATH}\n"
+        "Construisez d'abord le projet avec : cmake --build lib_cpp/build"
+    )
 
-    lib.mlp_create.argtypes = [ctypes.POINTER(ctypes.c_int), ctypes.c_int, ctypes.c_int, ctypes.c_int]
-    lib.mlp_create.restype = ctypes.c_void_p
-
-    lib.mlp_destroy.argtypes = [ctypes.c_void_p]
-
-    lib.mlp_n_layers.argtypes = [ctypes.c_void_p]
-    lib.mlp_n_layers.restype = ctypes.c_int
-
-    lib.mlp_layer_sizes.argtypes = [ctypes.c_void_p, ctypes.POINTER(ctypes.c_int)]
-
-    lib.mlp_forward.argtypes = [
-        ctypes.c_void_p,
-        ctypes.POINTER(ctypes.c_double),
-        ctypes.c_int,
-        ctypes.POINTER(ctypes.c_double),
-        ctypes.c_int,
-    ]
-    return lib
+_lib = ctypes.CDLL(str(LIB_PATH))
 
 
-_LIB = None
+# ============================================================
+# Déclaration de l'API C
+# ============================================================
+
+_lib.create_mlp_model.argtypes = [
+    ctypes.POINTER(ctypes.c_int),
+    ctypes.c_int
+]
+_lib.create_mlp_model.restype = ctypes.c_void_p
+
+_lib.destroy_mlp_model.argtypes = [
+    ctypes.c_void_p
+]
+_lib.destroy_mlp_model.restype = None
+
+_lib.predict_mlp_model.argtypes = [
+    ctypes.c_void_p,
+    ctypes.POINTER(ctypes.c_double),
+    ctypes.c_bool
+]
+_lib.predict_mlp_model.restype = ctypes.POINTER(ctypes.c_double)
+
+_lib.train_mlp_model.argtypes = [
+    ctypes.c_void_p,
+    ctypes.POINTER(ctypes.c_double),
+    ctypes.POINTER(ctypes.c_double),
+    ctypes.c_int,
+    ctypes.c_int,
+    ctypes.c_int,
+    ctypes.c_double,
+    ctypes.c_int,
+    ctypes.c_bool
+]
+_lib.train_mlp_model.restype = None
+
+_lib.get_mlp_loss.argtypes = [
+    ctypes.c_void_p,
+    ctypes.POINTER(ctypes.c_double),
+    ctypes.POINTER(ctypes.c_double),
+    ctypes.c_int,
+    ctypes.c_int,
+    ctypes.c_int,
+    ctypes.c_bool
+]
+_lib.get_mlp_loss.restype = ctypes.c_double
+
+_lib.mlp_n_layers.argtypes = [
+    ctypes.c_void_p
+]
+_lib.mlp_n_layers.restype = ctypes.c_int
+
+_lib.mlp_layer_sizes.argtypes = [
+    ctypes.c_void_p,
+    ctypes.POINTER(ctypes.c_int)
+]
+_lib.mlp_layer_sizes.restype = None
 
 
-def _lib():
-    global _LIB
-    if _LIB is None:
-        _LIB = _load_library()
-    return _LIB
-
+# ============================================================
+# Classe Python MLP
+# ============================================================
 
 class MLP:
-    def __init__(self, layer_sizes, output_activation="tanh", hidden_activation="tanh"):
-        lib = _lib()
-        arr_type = ctypes.c_int * len(layer_sizes)
-        self._handle = lib.mlp_create(
-            arr_type(*layer_sizes),
-            len(layer_sizes),
-            _ACTIVATION_CODES[output_activation],
-            _ACTIVATION_CODES[hidden_activation],
+
+    def __init__(self, layer_sizes):
+        if len(layer_sizes) < 2:
+            raise ValueError(
+                "Le MLP doit contenir au moins une couche d'entrée "
+                "et une couche de sortie."
+            )
+
+        self.layer_sizes_requested = list(layer_sizes)
+
+        sizes = (ctypes.c_int * len(layer_sizes))(*layer_sizes)
+
+        self._handle = _lib.create_mlp_model(
+            sizes,
+            len(layer_sizes)
         )
 
-    def __del__(self):
-        if getattr(self, "_handle", None):
-            _lib().mlp_destroy(self._handle)
+        if not self._handle:
+            raise RuntimeError("Impossible de créer le modèle MLP.")
 
-    # --- Structure ---------------------------------------------------
+    def __del__(self):
+        handle = getattr(self, "_handle", None)
+
+        if handle:
+            _lib.destroy_mlp_model(handle)
+            self._handle = None
+
+    # --------------------------------------------------------
+    # Structure
+    # --------------------------------------------------------
+
     @property
     def layer_sizes(self):
-        lib = _lib()
-        n = lib.mlp_n_layers(self._handle)
-        buf = (ctypes.c_int * n)()
-        lib.mlp_layer_sizes(self._handle, buf)
-        return list(buf)
+        n = _lib.mlp_n_layers(self._handle)
+
+        sizes = (ctypes.c_int * n)()
+
+        _lib.mlp_layer_sizes(
+            self._handle,
+            sizes
+        )
+
+        return list(sizes)
 
     @property
     def n_inputs(self):
@@ -90,16 +134,166 @@ class MLP:
     def n_outputs(self):
         return self.layer_sizes[-1]
 
-    # --- Forward pass pur (pas d'entrainement) ------------------------
-    def forward(self, x):
-        """Propagation avant sans entrainement. Valide la coherence des
-        dimensions d'entree/sortie et le comportement des activations."""
-        lib = _lib()
-        n_in = self.n_inputs
-        n_out = self.n_outputs
-        if len(x) != n_in:
-            raise ValueError(f"Attendu {n_in} features en entree, recu {len(x)}")
-        x_arr = (ctypes.c_double * n_in)(*x)
-        out_arr = (ctypes.c_double * n_out)()
-        lib.mlp_forward(self._handle, x_arr, n_in, out_arr, n_out)
-        return list(out_arr)
+    # --------------------------------------------------------
+    # Forward / prédiction
+    # --------------------------------------------------------
+
+    def predict(self, x, classification=False):
+
+        if len(x) != self.n_inputs:
+            raise ValueError(
+                f"Le modèle attend {self.n_inputs} features, "
+                f"mais {len(x)} ont été fournies."
+            )
+
+        x_array = (ctypes.c_double * self.n_inputs)(
+            *[float(v) for v in x]
+        )
+
+        result = _lib.predict_mlp_model(
+            self._handle,
+            x_array,
+            classification
+        )
+
+        if not result:
+            raise RuntimeError("La prédiction C++ a échoué.")
+
+        return [
+            result[i]
+            for i in range(self.n_outputs)
+        ]
+
+    # --------------------------------------------------------
+    # Entraînement
+    # --------------------------------------------------------
+
+    def train(
+        self,
+        X,
+        Y,
+        epochs,
+        learning_rate,
+        classification=False
+    ):
+
+        sample_count = len(X)
+
+        if sample_count == 0:
+            raise ValueError("Le dataset d'entraînement est vide.")
+
+        if len(Y) != sample_count:
+            raise ValueError(
+                "X et Y doivent contenir le même nombre de samples."
+            )
+
+        input_dim = self.n_inputs
+        output_dim = self.n_outputs
+
+        X_flat = [
+            float(value)
+            for sample in X
+            for value in sample
+        ]
+
+        Y_flat = [
+            float(value)
+            for sample in Y
+            for value in sample
+        ]
+
+        X_array = (ctypes.c_double * len(X_flat))(*X_flat)
+        Y_array = (ctypes.c_double * len(Y_flat))(*Y_flat)
+
+        _lib.train_mlp_model(
+            self._handle,
+            X_array,
+            Y_array,
+            sample_count,
+            input_dim,
+            output_dim,
+            float(learning_rate),
+            int(epochs),
+            classification
+        )
+
+    # --------------------------------------------------------
+    # Loss
+    # --------------------------------------------------------
+
+    def loss(
+        self,
+        X,
+        Y,
+        classification=False
+    ):
+
+        sample_count = len(X)
+
+        input_dim = self.n_inputs
+        output_dim = self.n_outputs
+
+        X_flat = [
+            float(value)
+            for sample in X
+            for value in sample
+        ]
+
+        Y_flat = [
+            float(value)
+            for sample in Y
+            for value in sample
+        ]
+
+        X_array = (ctypes.c_double * len(X_flat))(*X_flat)
+        Y_array = (ctypes.c_double * len(Y_flat))(*Y_flat)
+
+        return _lib.get_mlp_loss(
+            self._handle,
+            X_array,
+            Y_array,
+            sample_count,
+            input_dim,
+            output_dim,
+            classification
+        )
+
+    # --------------------------------------------------------
+    # Accuracy
+    # --------------------------------------------------------
+
+    def accuracy(self, X, Y):
+
+        correct = 0
+
+        for x, y in zip(X, Y):
+
+            prediction = self.predict(
+                x,
+                classification=True
+            )
+
+            # Classification binaire
+            if self.n_outputs == 1:
+                predicted_class = prediction[0]
+                true_class = float(y[0])
+
+                if predicted_class == true_class:
+                    correct += 1
+
+            # Classification multiclasses one-hot
+            else:
+                predicted_class = max(
+                    range(self.n_outputs),
+                    key=lambda i: prediction[i]
+                )
+
+                true_class = max(
+                    range(len(y)),
+                    key=lambda i: y[i]
+                )
+
+                if predicted_class == true_class:
+                    correct += 1
+
+        return correct / len(X)
