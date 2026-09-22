@@ -1,0 +1,33 @@
+# macOS
+.DS_Store
+
+# VS Code
+.vscode/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+ENV/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Secrets / variables d'environnement
+.env
+.env.*
+
+# Build / compilation C++
+build/
+*.o
+*.a
+*.so
+*.dylib
+*.exe
+
+# Python packaging
+*.egg-info/
+dist/
