@@ -1,0 +1,170 @@
+C:\Users\NadineZERGUINE\python_venv\myenv\Lib\site-packages\PIL\Image.py:1047: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+
+=== jasmin : 10/2000 images deja presentes ===
+[jasmin] requete: 'jasmine flower'
+[jasmin]   386 URLs candidates trouvees
+[jasmin]   progression: 50/2000
+[jasmin]   progression: 100/2000
+[jasmin]   progression: 150/2000
+[jasmin]   progression: 200/2000
+[jasmin]   progression: 250/2000
+[jasmin]   progression: 300/2000
+[jasmin]   +328 images retenues sur cette requete (total 338/2000)
+[jasmin] requete: 'jasmine flower macro'
+[jasmin]   418 URLs candidates trouvees
+[jasmin]   progression: 350/2000
+[jasmin]   progression: 400/2000
+[jasmin]   progression: 450/2000
+[jasmin]   progression: 500/2000
+[jasmin]   progression: 550/2000
+[jasmin]   progression: 600/2000
+[jasmin]   progression: 650/2000
+[jasmin]   +326 images retenues sur cette requete (total 664/2000)
+[jasmin] requete: 'jasmine flower close up'
+Traceback (most recent call last):
+  File "C:\Users\NadineZERGUINE\OneDrive - Oxand\Bureau\PA\scraping\scrape_flowers.py", line 251, in <module>
+    main()
+  File "C:\Users\NadineZERGUINE\OneDrive - Oxand\Bureau\PA\scraping\scrape_flowers.py", line 245, in main
+    scrape_class(driver, class_name, args.target)
+  File "C:\Users\NadineZERGUINE\OneDrive - Oxand\Bureau\PA\scraping\scrape_flowers.py", line 210, in scrape_class
+    candidates = collect_urls_for_query(driver, query)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\NadineZERGUINE\OneDrive - Oxand\Bureau\PA\scraping\scrape_flowers.py", line 95, in collect_urls_for_query
+    driver.get(search_url)
+  File "C:\Users\NadineZERGUINE\python_venv\myenv\Lib\site-packages\selenium\webdriver\remote\webdriver.py", line 526, in get
+    self.execute(Command.GET, {"url": url})
+  File "C:\Users\NadineZERGUINE\python_venv\myenv\Lib\site-packages\selenium\webdriver\remote\webdriver.py", line 506, in execute
+    self.error_handler.check_response(response)
+  File "C:\Users\NadineZERGUINE\python_venv\myenv\Lib\site-packages\selenium\webdriver\remote\errorhandler.py", line 232, in check_response
+    raise exception_class(message, screen, stacktrace)
+selenium.common.exceptions.InvalidSessionIdException: Message: invalid session id: session deleted as the browser has closed the connection
+from disconnected: not connected to DevTools
+  (Session info: chrome=153.0.8010.37); For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#invalidsessionidexception
+Stacktrace:
+	chromedriver!GetHandleVerifier [0x7ff6e59fc895+5aa5]
+	chromedriver!(No symbol) [0x7ff6e5920570]
+	chromedriver!(No symbol) [0x7ff6e5744a7d]
+	chromedriver!(No symbol) [0x7ff6e5730412]
+	chromedriver!(No symbol) [0x7ff6e5756106]
+	chromedriver!(No symbol) [0x7ff6e57d1210]
+	chromedriver!(No symbol) [0x7ff6e57ef95d]
+	chromedriver!(No symbol) [0x7ff6e57921e2]
+	chromedriver!(No symbol) [0x7ff6e5792ff3]
+	chromedriver!GetHandleVerifier [0x7ff6e5e1b271+424481]
+	chromedriver!GetHandleVerifier [0x7ff6e5e46f77+450187]
+	chromedriver!GetHandleVerifier [0x7ff6e5e3ae6e+44407e]
+	chromedriver!GetHandleVerifier [0x7ff6e5af798e+100b9e]
+	chromedriver!(No symbol) [0x7ff6e592e2b5]
+	chromedriver!(No symbol) [0x7ff6e5929454]
+	chromedriver!(No symbol) [0x7ff6e59295e4]
+	chromedriver!(No symbol) [0x7ff6e591438c]
+	KERNEL32!BaseThreadInitThunk [0x7fffa82dcd87+17]
+	ntdll!RtlUserThreadStart [0x7fffa902caec+2c]
+
+C:\Users\NadineZERGUINE\python_venv\myenv\Lib\site-packages\PIL\Image.py:1047: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+
+=== jasmin : 664/2000 images deja presentes ===
+[jasmin] requete: 'jasmine flower'
+[jasmin]   385 URLs candidates trouvees
+[jasmin]   +28 images retenues sur cette requete (total 692/2000)
+[jasmin] requete: 'jasmine flower macro'
+[jasmin]   417 URLs candidates trouvees
+[jasmin]   progression: 700/2000
+[jasmin]   +32 images retenues sur cette requete (total 724/2000)
+[jasmin] requete: 'jasmine flower close up'
+[jasmin]   409 URLs candidates trouvees
+[jasmin]   progression: 750/2000
+[jasmin]   progression: 800/2000
+[jasmin]   progression: 850/2000
+[jasmin]   progression: 900/2000
+[jasmin]   progression: 950/2000
+[jasmin]   progression: 1000/2000
+[jasmin]   progression: 1050/2000
+[jasmin]   +337 images retenues sur cette requete (total 1061/2000)
+[jasmin] requete: 'fleur de jasmin'
+[jasmin]   140 URLs candidates trouvees
+[jasmin]   progression: 1100/2000
+[jasmin]   progression: 1150/2000
+[jasmin]   +110 images retenues sur cette requete (total 1171/2000)
+[jasmin] requete: 'jasmine plant blossom'
+[jasmin]   140 URLs candidates trouvees
+[jasmin]   progression: 1200/2000
+[jasmin]   progression: 1250/2000
+[jasmin]   +102 images retenues sur cette requete (total 1273/2000)
+[jasmin] requete: 'jasmine flower garden'
+[jasmin]   140 URLs candidates trouvees
+[jasmin]   progression: 1300/2000
+[jasmin]   progression: 1350/2000
+[jasmin]   +99 images retenues sur cette requete (total 1372/2000)
+[jasmin] requete: 'white jasmine flower'
+[jasmin]   140 URLs candidates trouvees
+[jasmin]   progression: 1400/2000
+[jasmin]   progression: 1450/2000
+[jasmin]   +90 images retenues sur cette requete (total 1462/2000)
+[jasmin] requete: 'jasmine vine flower'
+[jasmin]   138 URLs candidates trouvees
+[jasmin]   progression: 1500/2000
+[jasmin]   +81 images retenues sur cette requete (total 1543/2000)
+[jasmin] requete: 'arabian jasmine flower'
+[jasmin]   139 URLs candidates trouvees
+[jasmin]   progression: 1550/2000
+[jasmin]   progression: 1600/2000
+[jasmin]   progression: 1650/2000
+[jasmin]   +109 images retenues sur cette requete (total 1652/2000)
+[jasmin] requete: 'jasmine flower photography'
+[jasmin]   140 URLs candidates trouvees
+[jasmin]   progression: 1700/2000
+[jasmin]   +58 images retenues sur cette requete (total 1710/2000)
+=== jasmin termine : 1710/2000 ===
+C:\Users\NadineZERGUINE\python_venv\myenv\Lib\site-packages\PIL\Image.py:1047: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+
+=== jasmin : 1710/2000 images deja presentes ===
+[jasmin] requete: 'jasmine flower'
+[jasmin]   385 URLs candidates trouvees
+[jasmin]   +7 images retenues sur cette requete (total 1717/2000)
+[jasmin] requete: 'jasmine flower macro'
+[jasmin]   418 URLs candidates trouvees
+[jasmin]   +2 images retenues sur cette requete (total 1719/2000)
+[jasmin] requete: 'jasmine flower close up'
+[jasmin]   409 URLs candidates trouvees
+[jasmin]   +5 images retenues sur cette requete (total 1724/2000)
+[jasmin] requete: 'fleur de jasmin'
+[jasmin]   140 URLs candidates trouvees
+[jasmin]   +16 images retenues sur cette requete (total 1740/2000)
+[jasmin] requete: 'jasmine plant blossom'
+[jasmin]   140 URLs candidates trouvees
+[jasmin]   +2 images retenues sur cette requete (total 1742/2000)
+[jasmin] requete: 'jasmine flower garden'
+[jasmin]   140 URLs candidates trouvees
+[jasmin]   +2 images retenues sur cette requete (total 1744/2000)
+[jasmin] requete: 'white jasmine flower'
+[jasmin]   140 URLs candidates trouvees
+[jasmin]   progression: 1750/2000
+[jasmin]   +16 images retenues sur cette requete (total 1760/2000)
+[jasmin] requete: 'jasmine vine flower'
+[jasmin]   138 URLs candidates trouvees
+[jasmin]   +0 images retenues sur cette requete (total 1760/2000)
+[jasmin] requete: 'arabian jasmine flower'
+[jasmin]   139 URLs candidates trouvees
+[jasmin]   +4 images retenues sur cette requete (total 1764/2000)
+[jasmin] requete: 'jasmine flower photography'
+[jasmin]   140 URLs candidates trouvees
+[jasmin]   +0 images retenues sur cette requete (total 1764/2000)
+[jasmin] requete: 'jasmine flower field'
+[jasmin]   140 URLs candidates trouvees
+[jasmin]   progression: 1800/2000
+[jasmin]   progression: 1850/2000
+[jasmin]   +119 images retenues sur cette requete (total 1883/2000)
+[jasmin] requete: 'jasmine bush blossom'
+[jasmin]   140 URLs candidates trouvees
+[jasmin]   progression: 1900/2000
+[jasmin]   progression: 1950/2000
+[jasmin]   +87 images retenues sur cette requete (total 1970/2000)
+[jasmin] requete: 'jasmine flower branch'
+[jasmin]   140 URLs candidates trouvees
+[jasmin]   progression: 2000/2000
+[jasmin]   +30 images retenues sur cette requete (total 2000/2000)
+=== jasmin termine : 2000/2000 ===
