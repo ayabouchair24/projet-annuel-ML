@@ -1,38 +1,39 @@
 #include "ImageFeatures.hpp"
 #include "LinearModel.hpp"
-#include <algorithm>
-#include <fstream>
+#include "mlp.hpp"
+
 #include <filesystem>
+#include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <string>
 #include <vector>
-#include "mlp.hpp"
 
 namespace fs = std::filesystem;
 
-// Jeu de test facilement séparable par une droite
-std::vector<Sample> createLinearTest() {
-    return {
-            {{-2.0, -1.0}, 0},
-            {{-1.0, -2.0}, 0},
-            {{-2.0, -3.0}, 0},
+// -----------------------------------------------------------------------------
+// Cas de tests
+// -----------------------------------------------------------------------------
 
-            {{ 1.0,  2.0}, 1},
-            {{ 2.0,  1.0}, 1},
-            {{ 3.0,  2.0}, 1}
+std::vector<Sample> createLinearTest() {
+    // Deux classes séparables par une droite.
+    return {
+            {{1.0, 1.0},  1},
+            {{1.0, 2.0},  1},
+            {{2.0, 1.0},  1},
+            {{-1.0, -1.0}, -1},
+            {{-1.0, -2.0}, -1},
+            {{-2.0, -1.0}, -1}
     };
 }
 
-// XOR pas séparable par une droite
-// Avec transformed = true, on ajoute x1*x2
 std::vector<Sample> createXorTest(bool transformed) {
+    // XOR : impossible à séparer par une seule droite dans l'espace initial.
     std::vector<Sample> data = {
-            {{-1.0, -1.0}, 0},
-            {{ 1.0,  1.0}, 0},
-
-            {{-1.0,  1.0}, 1},
-            {{ 1.0, -1.0}, 1}
+            {{-1.0, -1.0}, -1},
+            {{ 1.0,  1.0}, -1},
+            {{-1.0,  1.0},  1},
+            {{ 1.0, -1.0},  1}
     };
 
     if (transformed) {
@@ -40,8 +41,8 @@ std::vector<Sample> createXorTest(bool transformed) {
             const double x1 = sample.features[0];
             const double x2 = sample.features[1];
 
-            // Transformation non linéaire :
-            // phi(x1, x2) = [x1, x2, x1*x2]
+            // Transformation vue en cours : on ajoute une combinaison
+            // non linéaire des entrées pour rendre le problème séparable.
             sample.features.push_back(x1 * x2);
         }
     }
@@ -49,33 +50,72 @@ std::vector<Sample> createXorTest(bool transformed) {
     return data;
 }
 
-void runToyExperiment(
+void runLinearToyExperiment(
         const std::string& title,
         std::vector<Sample> data) {
 
-    std::cout << "\n==============================\n";
+    std::cout << "\n====================================\n";
     std::cout << title << '\n';
-    std::cout << "==============================\n";
+    std::cout << "====================================\n";
 
     StandardScaler scaler;
-
     scaler.fit(data);
     scaler.transform(data);
 
-    LinearSoftmax model(
-            data[0].features.size(),
-            2
-    );
-
-    model.train(data, 300, 0.08);
+    LinearPerceptron model(data.front().features.size());
+    model.train(data, 100, 0.1);
 
     std::cout << std::fixed << std::setprecision(2);
-
-    std::cout
-            << "Accuracy : "
-            << model.accuracy(data)
-            << "%\n";
+    std::cout << "Accuracy : " << model.accuracy(data) << "%\n";
 }
+
+void runMlpXorExperiment() {
+    std::cout << "\n====================================\n";
+    std::cout << "XOR avec PMC\n";
+    std::cout << "====================================\n";
+
+    const std::vector<std::vector<double>> X = {
+            {-1.0, -1.0},
+            { 1.0,  1.0},
+            {-1.0,  1.0},
+            { 1.0, -1.0}
+    };
+
+    // Sortie unique dans [-1, 1], conforme à l'utilisation de tanh vue en cours.
+    const std::vector<std::vector<double>> Y = {
+            {-1.0},
+            {-1.0},
+            { 1.0},
+            { 1.0}
+    };
+
+   MLP model({2, 2, 1});
+
+    const int epochs = 5000;
+    const double learningRate = 0.05;
+    const std::vector<double> losses = model.fit(X, Y, epochs, learningRate);
+
+    int correct = 0;
+    for (std::size_t i = 0; i < X.size(); ++i) {
+        if (model.predict_binary(X[i]) == static_cast<int>(Y[i][0])) {
+            ++correct;
+        }
+    }
+
+    std::cout << "Architecture : 2 2 1\n";
+    std::cout << "Accuracy : "
+              << 100.0 * correct / static_cast<double>(X.size())
+              << "%\n";
+
+    if (!losses.empty()) {
+        std::cout << "Loss initiale : " << losses.front() << '\n';
+        std::cout << "Loss finale   : " << losses.back() << '\n';
+    }
+}
+
+// -----------------------------------------------------------------------------
+// Dataset fleurs
+// -----------------------------------------------------------------------------
 
 void showClassCounts(
         const std::vector<Sample>& data,
@@ -83,222 +123,177 @@ void showClassCounts(
         const std::string& datasetName) {
 
     std::vector<int> counts(labels.size(), 0);
-
     for (const Sample& sample : data) {
-        ++counts[sample.label];
+        if (sample.label >= 0 && sample.label < static_cast<int>(counts.size())) {
+            ++counts[sample.label];
+        }
     }
 
     std::cout << "\n" << datasetName << " :\n";
-
     for (std::size_t i = 0; i < labels.size(); ++i) {
-        std::cout
-                << " - " << labels[i]
-                << " : " << counts[i]
-                << " image(s)\n";
+        std::cout << " - " << labels[i]
+                  << " : " << counts[i] << " image(s)\n";
     }
 }
 
-void runFlowerExperiment(
+void loadFlowerData(
         const std::string& trainPath,
         const std::string& testPath,
-        int epochs) {
+        std::vector<Sample>& trainData,
+        std::vector<Sample>& testData,
+        std::vector<std::string>& labels) {
 
-    std::cout << "\nChargement des images...\n";
-
-    std::vector<std::string> labels;
-
-    std::vector<Sample> trainData =
-            loadDataset(trainPath, labels);
-
-    std::vector<Sample> testData =
-            loadDataset(testPath, labels);
+    trainData = loadDataset(trainPath, labels);
+    testData = loadDataset(testPath, labels);
 
     if (labels.size() != 3) {
-        std::cerr
-                << "\nERREUR : il faut exactement 3 dossiers de classes.\n"
-                << "Exemple : jonquille, fleur_2, fleur_3.\n";
-
-        return;
+        throw std::runtime_error("Le dataset doit contenir exactement 3 classes.");
     }
-
     if (trainData.empty() || testData.empty()) {
-        std::cerr
-                << "\nERREUR : le dossier train ou test ne contient pas d'images.\n";
-
-        return;
+        throw std::runtime_error("Le dossier train ou test est vide.");
     }
+}
 
-    showClassCounts(trainData, labels, "Images d'entrainement");
-    showClassCounts(testData, labels, "Images de test");
-
-    // La normalisation est apprise seulement avec train.
-    StandardScaler scaler;
-
-    scaler.fit(trainData);
-    scaler.transform(trainData);
-    scaler.transform(testData);
-
-    LinearSoftmax model(
-            trainData[0].features.size(),
-            3
-    );
-
-    std::cout << "\nEntrainement du modele...\n";
-
-    model.train(trainData, epochs, 0.03);
-
-    std::cout << std::fixed << std::setprecision(2);
-
-    std::cout
-            << "\nAccuracy entrainement : "
-            << model.accuracy(trainData)
-            << "%\n";
-
-    std::cout
-            << "Accuracy test : "
-            << model.accuracy(testData)
-            << "%\n";
-}void runFlowerMLPExperiment(
+void runFlowerLinearExperiment(
         const std::string& trainPath,
         const std::string& testPath,
         int epochs) {
 
     std::cout << "\n====================================\n";
-    std::cout << "Classification des fleurs avec MLP\n";
+    std::cout << "Classification des fleurs avec modèle linéaire\n";
     std::cout << "====================================\n";
 
     std::vector<std::string> labels;
+    std::vector<Sample> trainData;
+    std::vector<Sample> testData;
+    loadFlowerData(trainPath, testPath, trainData, testData, labels);
 
-    std::vector<Sample> trainData =
-            loadDataset(trainPath, labels);
-
-    std::vector<Sample> testData =
-            loadDataset(testPath, labels);
-
-    if (labels.size() != 3) {
-        std::cerr << "\nERREUR : il faut exactement 3 classes.\n";
-        return;
-    }
-
-    if (trainData.empty() || testData.empty()) {
-        std::cerr << "\nERREUR : train ou test vide.\n";
-        return;
-    }
-
-    showClassCounts(trainData, labels, "Images d'entrainement");
+    showClassCounts(trainData, labels, "Images d'entraînement");
     showClassCounts(testData, labels, "Images de test");
 
-    // Normalisation apprise uniquement sur le train.
     StandardScaler scaler;
     scaler.fit(trainData);
     scaler.transform(trainData);
     scaler.transform(testData);
 
-    // Conversion vers le format attendu par le MLP.
-    std::vector<std::vector<double>> X_train;
-    std::vector<std::vector<double>> Y_train;
+    LinearMultiClass model(trainData.front().features.size(), 3);
+    model.train(trainData, epochs, 0.001);
+
+    std::cout << std::fixed << std::setprecision(2);
+    std::cout << "\nAccuracy entraînement : "
+              << model.accuracy(trainData) << "%\n";
+    std::cout << "Accuracy test : "
+              << model.accuracy(testData) << "%\n";
+}
+
+fs::path reportFolder() {
+    if (fs::exists("rapport")) {
+        return "rapport";
+    }
+    return "../rapport";
+}
+
+void runFlowerMlpExperiment(
+        const std::string& trainPath,
+        const std::string& testPath,
+        int epochs) {
+
+    std::cout << "\n====================================\n";
+    std::cout << "Classification des fleurs avec PMC\n";
+    std::cout << "====================================\n";
+
+    std::vector<std::string> labels;
+    std::vector<Sample> trainData;
+    std::vector<Sample> testData;
+    loadFlowerData(trainPath, testPath, trainData, testData, labels);
+
+    showClassCounts(trainData, labels, "Images d'entraînement");
+    showClassCounts(testData, labels, "Images de test");
+
+    // Le scaler est appris uniquement sur le train.
+    StandardScaler scaler;
+    scaler.fit(trainData);
+    scaler.transform(trainData);
+    scaler.transform(testData);
+
+    std::vector<std::vector<double>> XTrain;
+    std::vector<std::vector<double>> YTrain;
 
     for (const Sample& sample : trainData) {
-        X_train.push_back(sample.features);
+        XTrain.push_back(sample.features);
 
+        // Une sortie par classe, avec 1 pour la classe attendue et 0 ailleurs.
+        // Le PMC utilise tanh et apprend ici par erreur quadratique.
         std::vector<double> target(3, 0.0);
         target[sample.label] = 1.0;
-        Y_train.push_back(target);
+        YTrain.push_back(target);
     }
 
-    // Architecture : 11 features -> 16 -> 8 -> 3 classes.
-    MLP model(
-            {static_cast<int>(trainData[0].features.size()), 16, 8, 3},
-            MLP::OutputActivation::Tanh,
-            MLP::HiddenActivation::Tanh
-    );
+    MLP model({
+        static_cast<int>(trainData.front().features.size()),
+        16,
+        8,
+        3
+});
 
-    std::cout << "\nArchitecture MLP : ";
+    std::cout << "\nArchitecture PMC : ";
     for (int size : model.layer_sizes()) {
-        std::cout << size << " ";
+        std::cout << size << ' ';
     }
     std::cout << "\n";
 
-    std::cout << "Entrainement du MLP...\n";
+    const std::vector<double> losses =
+            model.fit(XTrain, YTrain, epochs, 0.01);
 
-    std::vector<double> losses =
-            model.fit(X_train, Y_train, epochs, 0.01);
-
-        // Sauvegarde de la courbe de Loss pour le rapport.
-std::ofstream lossFile("../rapport/mlp_loss.csv");
-
-if (lossFile.is_open()) {
-    lossFile << "epoch,loss\n";
-
-    for (std::size_t i = 0; i < losses.size(); ++i) {
-        lossFile << (i + 1) << "," << losses[i] << "\n";
-    }
-
-    lossFile.close();
-
-    std::cout << "Courbe de Loss sauvegardee dans ../rapport/mlp_loss.csv\n";
-} else {
-    std::cerr << "Attention : impossible de sauvegarder mlp_loss.csv\n";
-}
-
-    // Accuracy train.
     int correctTrain = 0;
-
     for (const Sample& sample : trainData) {
-        int prediction =
-                model.predict_multiclass(sample.features);
-
-        if (prediction == sample.label) {
+        if (model.predict_multiclass(sample.features) == sample.label) {
             ++correctTrain;
         }
     }
 
-    // Accuracy test.
     int correctTest = 0;
-
     for (const Sample& sample : testData) {
-        int prediction =
-                model.predict_multiclass(sample.features);
-
-        if (prediction == sample.label) {
+        if (model.predict_multiclass(sample.features) == sample.label) {
             ++correctTest;
         }
     }
 
-    double trainAccuracy =
-            100.0 * correctTrain / trainData.size();
-
-    double testAccuracy =
-            100.0 * correctTest / testData.size();
-
     std::cout << std::fixed << std::setprecision(2);
-
-    std::cout << "\nAccuracy entrainement MLP : "
-              << trainAccuracy << "%\n";
-
-    std::cout << "Accuracy test MLP : "
-              << testAccuracy << "%\n";
+    std::cout << "Accuracy entraînement PMC : "
+              << 100.0 * correctTrain / trainData.size() << "%\n";
+    std::cout << "Accuracy test PMC : "
+              << 100.0 * correctTest / testData.size() << "%\n";
 
     if (!losses.empty()) {
-        std::cout << "Loss initiale : "
-                  << losses.front() << "\n";
+        std::cout << "Loss initiale : " << losses.front() << '\n';
+        std::cout << "Loss finale : " << losses.back() << '\n';
 
-        std::cout << "Loss finale : "
-                  << losses.back() << "\n";
+        const fs::path output = reportFolder() / "mlp_loss.csv";
+        std::ofstream file(output);
+        if (file) {
+            file << "epoch,loss\n";
+            for (std::size_t i = 0; i < losses.size(); ++i) {
+                file << (i + 1) << ',' << losses[i] << '\n';
+            }
+            std::cout << "Loss sauvegardée dans " << output << '\n';
+        }
     }
 }
 
 void showUsage() {
     std::cout
             << "Commandes disponibles :\n\n"
-            << "4. Classification des fleurs avec MLP :\n"
-            << "   --images-mlp data/train data/test 500\n"
-            << "1. Test lineaire :\n"
+            << "1. Cas linéaire :\n"
             << "   --toy-linear\n\n"
-            << "2. Test XOR :\n"
+            << "2. XOR avec modèle linéaire + transformation :\n"
             << "   --toy-xor\n\n"
-            << "3. Classification des fleurs :\n"
-            << "   --images data/train data/test 500\n";
+            << "3. XOR avec PMC :\n"
+            << "   --toy-mlp-xor\n\n"
+            << "4. Fleurs avec modèle linéaire :\n"
+            << "   --images data/train data/test 100\n\n"
+            << "5. Fleurs avec PMC :\n"
+            << "   --images-mlp data/train data/test 500\n";
 }
 
 int main(int argc, char* argv[]) {
@@ -311,47 +306,40 @@ int main(int argc, char* argv[]) {
         const std::string command = argv[1];
 
         if (command == "--toy-linear") {
-            runToyExperiment(
-                    "Cas lineairement separable",
+            runLinearToyExperiment(
+                    "Cas linéairement séparable",
                     createLinearTest()
             );
         }
         else if (command == "--toy-xor") {
-            runToyExperiment(
-                    "XOR : cas KO sans transformation non lineaire",
+            runLinearToyExperiment(
+                    "XOR sans transformation : KO attendu",
                     createXorTest(false)
             );
 
-            runToyExperiment(
-                    "XOR : cas OK avec phi(x) = [x1, x2, x1*x2]",
+            runLinearToyExperiment(
+                    "XOR après transformation x1*x2 : OK attendu",
                     createXorTest(true)
             );
         }
-        else if (command == "--images") {
-                
+        else if (command == "--toy-mlp-xor") {
+            runMlpXorExperiment();
+        }
+        else if (command == "--images" || command == "--images-mlp") {
             const std::string trainPath =
                     argc >= 3 ? argv[2] : "data/train";
-
             const std::string testPath =
                     argc >= 4 ? argv[3] : "data/test";
-
             const int epochs =
-                    argc >= 5 ? std::stoi(argv[4]) : 500;
+                    argc >= 5 ? std::stoi(argv[4]) :
+                    (command == "--images" ? 100 : 500);
 
-            runFlowerExperiment(trainPath, testPath, epochs);
+            if (command == "--images") {
+                runFlowerLinearExperiment(trainPath, testPath, epochs);
+            } else {
+                runFlowerMlpExperiment(trainPath, testPath, epochs);
+            }
         }
-        else if (command == "--images-mlp") {
-    const std::string trainPath =
-            argc >= 3 ? argv[2] : "data/train";
-
-    const std::string testPath =
-            argc >= 4 ? argv[3] : "data/test";
-
-    const int epochs =
-            argc >= 5 ? std::stoi(argv[4]) : 500;
-
-    runFlowerMLPExperiment(trainPath, testPath, epochs);
-}
         else {
             showUsage();
         }

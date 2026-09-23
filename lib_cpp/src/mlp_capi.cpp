@@ -2,65 +2,73 @@
 #include "mlp.hpp"
 
 #include <vector>
-#include <iostream>
 
 struct MLPHandle {
     MLP model;
     std::vector<double> last_prediction;
 
-    MLPHandle(const std::vector<int>& layer_sizes,
-              MLP::OutputActivation output_act = MLP::OutputActivation::Tanh,
-              MLP::HiddenActivation hidden_act = MLP::HiddenActivation::Tanh)
-        : model(layer_sizes, output_act, hidden_act) {}
+    explicit MLPHandle(const std::vector<int>& layer_sizes)
+        : model(layer_sizes) {}
 };
 
 extern "C" {
 
 MLPHandle* create_mlp_model(const int* layer_sizes, int n_layers) {
-    if (!layer_sizes || n_layers < 2) return nullptr;
+    if (!layer_sizes || n_layers < 2) {
+        return nullptr;
+    }
+
     std::vector<int> sizes(layer_sizes, layer_sizes + n_layers);
-    
-    // Par défaut : Tanh pour les couches cachées et la sortie
-    return new MLPHandle(sizes, MLP::OutputActivation::Tanh, MLP::HiddenActivation::Tanh);
+    return new MLPHandle(sizes);
 }
 
 void destroy_mlp_model(MLPHandle* handle) {
     delete handle;
 }
 
-double* predict_mlp_model(MLPHandle* handle, const double* sample, bool is_classification) {
-    if (!handle || !sample) return nullptr;
+double* predict_mlp_model(
+        MLPHandle* handle,
+        const double* sample,
+        bool /*is_classification*/) {
 
-    int input_dim = handle->model.layer_sizes().front();
-    std::vector<double> input(sample, sample + input_dim);
-    
-    handle->last_prediction = handle->model.predict_raw(input);
-
-    if (is_classification) {
-        for (double& val : handle->last_prediction) {
-            val = (val >= 0.0) ? 1.0 : -1.0;
-        }
+    if (!handle || !sample) {
+        return nullptr;
     }
 
+    const int inputDim = handle->model.n_inputs();
+    std::vector<double> input(sample, sample + inputDim);
+
+    // On renvoie les sorties réelles du PMC.
+    // La décision de classe est faite par le code appelant :
+    // signe pour une sortie binaire, maximum pour plusieurs sorties.
+    handle->last_prediction = handle->model.predict_raw(input);
     return handle->last_prediction.data();
 }
 
 void train_mlp_model(
-    MLPHandle* handle,
-    const double* X,
-    const double* Y,
-    int sample_count,
-    int input_dim,
-    int output_dim,
-    double alpha,
-    int epochs,
-    bool is_classification
-) {
-    if (!handle || !X || !Y) return;
+        MLPHandle* handle,
+        const double* X,
+        const double* Y,
+        int sample_count,
+        int input_dim,
+        int output_dim,
+        double alpha,
+        int epochs,
+        bool /*is_classification*/) {
 
-    // Conversion des pointeurs bruts C en std::vector<std::vector<double>>
-    std::vector<std::vector<double>> inputs(sample_count, std::vector<double>(input_dim));
-    std::vector<std::vector<double>> targets(sample_count, std::vector<double>(output_dim));
+    if (!handle || !X || !Y || sample_count <= 0 || epochs <= 0) {
+        return;
+    }
+
+    if (input_dim != handle->model.n_inputs()
+        || output_dim != handle->model.n_outputs()) {
+        return;
+    }
+
+    std::vector<std::vector<double>> inputs(
+            sample_count, std::vector<double>(input_dim));
+    std::vector<std::vector<double>> targets(
+            sample_count, std::vector<double>(output_dim));
 
     for (int i = 0; i < sample_count; ++i) {
         for (int j = 0; j < input_dim; ++j) {
@@ -71,34 +79,46 @@ void train_mlp_model(
         }
     }
 
-    // Appel conforme à la signature de votre mlp.hpp : (X, Y, epochs, learning_rate)
     handle->model.fit(inputs, targets, epochs, alpha);
 }
 
 double get_mlp_loss(
-    MLPHandle* handle,
-    const double* X,
-    const double* Y,
-    int sample_count,
-    int input_dim,
-    int output_dim,
-    bool is_classification
-) {
-    if (!handle || !X || !Y) return 0.0;
+        MLPHandle* handle,
+        const double* X,
+        const double* Y,
+        int sample_count,
+        int input_dim,
+        int output_dim,
+        bool /*is_classification*/) {
 
-    double total_loss = 0.0;
+    if (!handle || !X || !Y || sample_count <= 0) {
+        return 0.0;
+    }
+
+    if (input_dim != handle->model.n_inputs()
+        || output_dim != handle->model.n_outputs()) {
+        return 0.0;
+    }
+
+    double totalLoss = 0.0;
+
     for (int i = 0; i < sample_count; ++i) {
-        std::vector<double> input(X + i * input_dim, X + (i + 1) * input_dim);
-        auto pred = handle->model.predict_raw(input);
+        std::vector<double> input(
+                X + i * input_dim,
+                X + (i + 1) * input_dim);
+
+        const std::vector<double> prediction =
+                handle->model.predict_raw(input);
 
         for (int j = 0; j < output_dim; ++j) {
-            double target = Y[i * output_dim + j];
-            double diff = target - pred[j];
-            total_loss += diff * diff;
+            const double error =
+                    prediction[j] - Y[i * output_dim + j];
+            totalLoss += error * error;
         }
     }
 
-    return total_loss / (sample_count * output_dim);
+    return totalLoss /
+           static_cast<double>(sample_count * output_dim);
 }
 
 int mlp_n_layers(MLPHandle* handle) {
@@ -106,9 +126,14 @@ int mlp_n_layers(MLPHandle* handle) {
 }
 
 void mlp_layer_sizes(MLPHandle* handle, int* out_sizes) {
-    if (!handle || !out_sizes) return;
+    if (!handle || !out_sizes) {
+        return;
+    }
+
     const auto& sizes = handle->model.layer_sizes();
-    for (size_t i = 0; i < sizes.size(); ++i) out_sizes[i] = sizes[i];
+    for (std::size_t i = 0; i < sizes.size(); ++i) {
+        out_sizes[i] = sizes[i];
+    }
 }
 
-}  // extern "C"
+} // extern "C"
