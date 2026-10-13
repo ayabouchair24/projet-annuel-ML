@@ -1,0 +1,20 @@
+categorie,cas,architecture,activation,resultat,test,verdict,nb_poids,nb_exemples,exemples_par_poids
+classification,Linear Simple,"[2, 1]",Tanh,100.0%,,OK,3,3,1.0
+classification,Linear Simple,"[2, 1]",Sigmoïde,100.0%,,OK,3,3,1.0
+classification,Linear Multiple,"[2, 1]",Tanh,100.0%,,OK,3,100,33.33
+classification,Linear Multiple,"[2, 1]",Sigmoïde,100.0%,,OK,3,100,33.33
+classification,XOR,"[2, 2, 1]",Tanh,100.0%,,OK,9,4,0.44
+classification,XOR,"[2, 2, 1]",Sigmoïde,100.0%,,OK,9,4,0.44
+classification,Cross,"[2, 4, 1]",Tanh,99.8%,98.5%,OK,17,500,29.41
+classification,Cross,"[2, 4, 1]",Sigmoïde,99.4%,98.5%,OK,17,500,29.41
+classification,Multi Linear 3 classes,"[2, 3]",Tanh,100.0%,,OK,9,415,46.11
+classification,Multi Linear 3 classes,"[2, 3]",Sigmoïde,100.0%,,OK,9,415,46.11
+classification,Multi Cross,"[2, 32, 32, 3]",Tanh,98.7%,90.3%,OK,1251,700,0.56
+classification,Multi Cross,"[2, 32, 32, 3]",Sigmoïde,96.0%,82.7%,OK,1251,700,0.56
+regression,Linear Simple 2D,"[1, 1]",—,MAE 0.0000,,OK,2,2,1.0
+regression,Non Linear Simple 2D,"[1, 4, 1]",Tanh,MAE 0.0000,,OK,13,3,0.23
+regression,Non Linear Simple 2D,"[1, 4, 1]",Sigmoïde,MAE 0.0000,,OK,13,3,0.23
+regression,Linear Simple 3D,"[2, 1]",—,MAE 0.0024,,OK,3,3,1.0
+regression,Linear Tricky 3D,"[2, 1]",—,MAE 0.0000,,OK,3,3,1.0
+regression,Non Linear Simple 3D,"[2, 2, 1]",Tanh,MAE 0.0000,,OK,9,4,0.44
+regression,Non Linear Simple 3D,"[2, 2, 1]",Sigmoïde,MAE 0.0000,,OK,9,4,0.44

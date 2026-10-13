@@ -1,0 +1,18 @@
+# Fichiers de compilation (générés par CMake)
+build/
+cmake-build-*/
+python/libmlp.so
+python/libmlp.dylib
+python/mlp.dll
+python/libmlp.dll
+
+# Environnement Python et caches
+venv/
+.venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# Fichiers système
+.DS_Store
+Thumbs.db
