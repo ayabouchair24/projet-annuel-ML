@@ -1,0 +1,9 @@
+
+*.dll
+*.so
+*.dylib
+*.npz
+*.bin
+__pycache__/
+cmake-build-*/
+.ipynb_checkpoints/
