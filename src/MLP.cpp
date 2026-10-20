@@ -1,11 +1,4 @@
-// Fichier de Nadine (base du MLP : structure, forward pass, rétropropagation)
-// Corrections / ajouts (étape 1) : Nadine Zerguine
-//   - Correction du dépassement mémoire sur la dernière couche (X et deltas)
-//   - Ajout de la fonction d'activation Sigmoïde (en plus de Tanh)
-//   - Tirage au hasard d'un exemple à chaque itération (comme dans le cours)
-//   - Ajout de set_mlp_seed pour des résultats reproductibles
-//   - Tirage aléatoire de l'exemple valable aussi sur Windows (rand() sur 15 bits)
-//   - (étape 2) get_mlp_num_weights / get_mlp_weights / set_mlp_weights : sauvegarde et chargement
+
 
 #include <stdint.h>
 #include <stdlib.h>
