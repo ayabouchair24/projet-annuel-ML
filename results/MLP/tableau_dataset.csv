@@ -1,3 +1,0 @@
-Cas de test,Modèle / Structure,Seed,Learning rate,Epoch,Train Loss (MSE),Train Accuracy,Test Accuracy
-Dataset fleurs (3173 train / 792 test),"(192, 32, 3) Tanh",0,0.008,21,0.1931,91.6%,84.1%
-Dataset fleurs (3173 train / 792 test),"(192, 32, 3) Sigmoïde",0,0.16,21,0.0321,95.1%,83.6%
