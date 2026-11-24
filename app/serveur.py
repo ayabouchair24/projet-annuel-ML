@@ -1,7 +1,7 @@
 # Fichier de Nadine Zerguine : serveur de l'API (Flask) qui héberge les modèles pré-entraînés
 # et qui envoie la page web index.html (le client).
 # Le MLP utilise mlp_wrapper.py et images_utils.py (même prétraitement qu'à l'entraînement).
-# Les fonctions du modèle linéaire (Assia), SVM et RBF (Aya) reprennent le code de l'ancien application.py de l'équipe.
+# Les fonctions du modèle linéaire (Assia), RBF (Aya) reprennent le code de l'ancien application.py de l'équipe.
 import ctypes
 import json
 import sys
@@ -85,46 +85,27 @@ def predire_lineaire(image):
     return classes[int(np.argmax(scores))], scores, classes
 
 
-# ---------- SVM et RBF (fichiers .npz exportés depuis les notebooks, repris de application.py) ----------
-deja_charges = {}
+# ---------- RBF (fichier .npz exporté depuis le notebook) ----------
+modele_rbf = None
 
 
-def charger_modele(algo):
-    if algo in deja_charges:
-        return deja_charges[algo]
-    nom_fichier = "svm.npz" if algo == "SVM" else "rbf.npz"
-    with np.load(MODELES / algo / nom_fichier, allow_pickle=False) as data:
-        m = {k: data[k].copy() for k in data.files}
-    m["config"] = json.loads(str(m["config"]))
-    m["classes"] = m["classes"].tolist()
-    m["taille"] = int(m["taille"])
-    deja_charges[algo] = m
-    return m
+def predire_rbf(image):
+    global modele_rbf
+    if modele_rbf is None:
+        with np.load(MODELES / "RBF" / "rbf.npz", allow_pickle=False) as data:
+            modele_rbf = {k: data[k].copy() for k in data.files}
+        modele_rbf["config"] = json.loads(str(modele_rbf["config"]))
+        modele_rbf["classes"] = modele_rbf["classes"].tolist()
+        modele_rbf["taille"] = int(modele_rbf["taille"])
+    m = modele_rbf
 
-
-def predire_svm_rbf(image, algo):
-    m = charger_modele(algo)
     x = iu.preprocess_image(image, m["taille"])[0]
     gamma = float(m["config"]["gamma"])
     scores = []
     for c in range(len(m["classes"])):
-        if algo == "SVM":
-            sv = m[f"sv_{c}"]
-            coeffs = m[f"alphasY_{c}"]
-            biais = float(m[f"bias_{c}"])
-            noyau = int(m["config"]["kernel"])
-            if noyau == 0:      # linéaire
-                kv = sv @ x
-            elif noyau == 1:    # polynomial
-                kv = np.power(1.0 + sv @ x, int(m["config"]["degree"]))
-            else:               # RBF
-                kv = np.exp(-gamma * np.sum((sv - x) ** 2, axis=1))
-            score = biais + np.dot(coeffs, kv)
-        else:
-            centres = m[f"centers_{c}"]
-            poids = m[f"weights_{c}"]
-            score = np.dot(poids, np.exp(-gamma * np.sum((centres - x) ** 2, axis=1)))
-        scores.append(float(score))
+        centres = m[f"centers_{c}"]
+        poids = m[f"weights_{c}"]
+        scores.append(float(np.dot(poids, np.exp(-gamma * np.sum((centres - x) ** 2, axis=1)))))
     return m["classes"][int(np.argmax(scores))], np.array(scores), m["classes"]
 
 
@@ -140,7 +121,7 @@ def accueil():
 
 @app.route("/modeles")
 def liste_modeles():
-    return jsonify({"modeles": ["MLP", "Linear Model", "SVM", "RBF"]})
+    return jsonify({"modeles": ["MLP", "Linear Model", "RBF"]})
 
 
 @app.route("/predict", methods=["POST"])
@@ -156,8 +137,8 @@ def predict():
             classe, scores, classes = predire_mlp(image)
         elif nom == "Linear Model":
             classe, scores, classes = predire_lineaire(image)
-        elif nom in ("SVM", "RBF"):
-            classe, scores, classes = predire_svm_rbf(image, nom)
+        elif nom == "RBF":
+            classe, scores, classes = predire_rbf(image)
         else:
             return jsonify({"erreur": "modèle inconnu : " + nom}), 400
     except Exception as e:

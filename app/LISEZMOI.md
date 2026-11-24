@@ -3,7 +3,7 @@
 Application de classification de fleurs (jasmin, jonquille, tournesol), sans Streamlit.
 
 ```
- index.html (le client, dans le navigateur) --- image + nom du modèle ---> serveur.py (l'API, Flask) ---> MLP / Linéaire / SVM / RBF
+ index.html (le client, dans le navigateur) --- image + nom du modèle ---> serveur.py (l'API, Flask) ---> MLP / Linéaire / RBF
                                             <--- classe + scores --------                              (bibliothèque C++ + fichiers .npz)
 ```
 
