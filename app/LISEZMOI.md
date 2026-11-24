@@ -19,10 +19,10 @@ Application de classification de fleurs (jasmin, jonquille, tournesol), sans Str
    `cmake -S . -B build` puis `cmake --build build`
 2. Installer les paquets : `pip install flask pillow numpy`
 3. Lancer le serveur : `python app/serveur.py`
-4. Ouvrir http://127.0.0.1:5000 dans le navigateur
+4. Ouvrir http://127.0.0.1:5001 dans le navigateur
 
 ## Tester l'API sans la page
-`curl -F modele=MLP -F image=@une_fleur.jpg http://127.0.0.1:5000/predict`
+`curl -F modele=MLP -F image=@une_fleur.jpg http://127.0.0.1:5001/predict`
 
 ## Remarques
 - Les scores sont les sorties brutes du modèle (tanh pour le MLP), pas des probabilités.
