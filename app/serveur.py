@@ -1,7 +1,7 @@
 # Fichier de Nadine Zerguine : serveur de l'API (Flask) qui héberge les modèles pré-entraînés
 # et qui envoie la page web index.html (le client).
 # Le MLP utilise mlp_wrapper.py et images_utils.py (même prétraitement qu'à l'entraînement).
-# Les fonctions du modèle linéaire, SVM et RBF sont reprises de application/application.py (travail de l'équipe).
+# Les fonctions du modèle linéaire (Assia), SVM et RBF (Aya) reprennent le code de l'ancien application.py de l'équipe.
 import ctypes
 import json
 import sys
