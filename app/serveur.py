@@ -1,4 +1,5 @@
-# Fichier de Nadine Zerguine : serveur de l'API (Flask) qui héberge les modèles pré-entraînés.
+# Fichier de Nadine Zerguine : serveur de l'API (Flask) qui héberge les modèles pré-entraînés
+# et qui envoie la page web index.html (le client).
 # Le MLP utilise mlp_wrapper.py et images_utils.py (même prétraitement qu'à l'entraînement).
 # Les fonctions du modèle linéaire, SVM et RBF sont reprises de application/application.py (travail de l'équipe).
 import ctypes
@@ -8,7 +9,7 @@ from pathlib import Path
 
 import numpy as np
 from PIL import Image
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 
 BASE = Path(__file__).resolve().parent
 RACINE = BASE.parent
@@ -21,7 +22,6 @@ from mlp_wrapper import MLP
 
 # ---------- La bibliothèque C++ (on prend la première qui existe) ----------
 CHEMINS = [BASE / "libPA_V2.dll",
-           RACINE / "application" / "libPA_V2.dll",
            RACINE / "build" / "libPA_V2.dylib",
            RACINE / "build" / "libPA_V2.so",
            RACINE / "build" / "libPA_V2.dll"]
@@ -130,6 +130,12 @@ def predire_svm_rbf(image, algo):
 
 # ---------- L'API ----------
 app = Flask(__name__)
+
+
+@app.route("/")
+def accueil():
+    # la page web (le client) est servie par le serveur
+    return send_from_directory(BASE, "index.html")
 
 
 @app.route("/modeles")

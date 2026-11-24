@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Classification de fleurs</title>
+<style>
+  body { font-family: Arial, sans-serif; background: #f4f6f4; margin: 0; }
+  .carte { max-width: 480px; margin: 40px auto; background: white; padding: 24px; border-radius: 10px; box-shadow: 0 1px 6px #0002; }
+  h1 { font-size: 22px; margin-top: 0; }
+  label { margin-right: 12px; }
+  img { max-width: 100%; max-height: 260px; display: block; margin: 16px 0; }
+  button { background: #2e7d32; color: white; border: none; padding: 10px 18px; border-radius: 6px; font-size: 15px; cursor: pointer; }
+  .resultat { margin-top: 18px; }
+  .classe { font-size: 20px; font-weight: bold; color: #2e7d32; }
+  .erreur { color: #b00020; }
+  td { padding: 2px 14px 2px 0; }
+</style>
+</head>
+<body>
+<div class="carte">
+  <h1>Classification de fleurs</h1>
+  <p>1. Choisis un modèle</p>
+  <div id="modeles"></div>
+  <p>2. Choisis une photo (jasmin, jonquille ou tournesol)</p>
+  <input type="file" id="fichier" accept="image/*">
+  <img id="apercu" style="display:none">
+  <p>3. Lance la prédiction</p>
+  <button onclick="classifier()">Classifier</button>
+  <div class="resultat" id="resultat"></div>
+</div>
+
+<script>
+// 1. on demande au serveur la liste des modèles
+fetch("/modeles")
+  .then(r => r.json())
+  .then(data => {
+    let html = "";
+    for (let i = 0; i < data.modeles.length; i++) {
+      let nom = data.modeles[i];
+      let coche = (i == 0) ? "checked" : "";
+      html += `<label><input type="radio" name="modele" value="${nom}" ${coche}> ${nom}</label>`;
+    }
+    document.getElementById("modeles").innerHTML = html;
+  });
+
+// 2. on affiche la photo choisie
+document.getElementById("fichier").onchange = function () {
+  let f = this.files[0];
+  let img = document.getElementById("apercu");
+  if (f) {
+    img.src = URL.createObjectURL(f);
+    img.style.display = "block";
+  }
+};
+
+// 3. on envoie la photo et le nom du modèle au serveur
+function classifier() {
+  let resultat = document.getElementById("resultat");
+  let f = document.getElementById("fichier").files[0];
+  if (!f) {
+    resultat.innerHTML = "<span class='erreur'>Choisis d'abord une photo.</span>";
+    return;
+  }
+  let modele = document.querySelector("input[name=modele]:checked").value;
+
+  let formulaire = new FormData();
+  formulaire.append("modele", modele);
+  formulaire.append("image", f);
+
+  resultat.innerHTML = "Calcul en cours...";
+  fetch("/predict", { method: "POST", body: formulaire })
+    .then(r => r.json())
+    .then(rep => {
+      if (rep.erreur) {
+        resultat.innerHTML = "<span class='erreur'>" + rep.erreur + "</span>";
+        return;
+      }
+      let html = "Prédiction (" + rep.modele + ") : <span class='classe'>" + rep.classe + "</span>";
+      html += "<p>Scores du modèle (ce ne sont pas des probabilités) :</p><table>";
+      for (let i = 0; i < rep.classes.length; i++) {
+        html += "<tr><td>" + rep.classes[i] + "</td><td>" + rep.scores[i].toFixed(3) + "</td></tr>";
+      }
+      resultat.innerHTML = html + "</table>";
+    })
+    .catch(() => {
+      resultat.innerHTML = "<span class='erreur'>Le serveur ne répond pas. Lance d'abord : python app/serveur.py</span>";
+    });
+}
+</script>
+</body>
+</html>
